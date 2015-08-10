@@ -23,7 +23,7 @@ def login(brows, user_name, password):
     brows.fill('password', password)
 
 #####runs the advanced search and pulls up the first results page
-def advanced_search(pub_id, search_term, year=None, sports=False, phantom=False, user_name, password):
+def advanced_search(pub_id, search_term,  user_name, password, year=None, sports=False, phantom=False):
     if phantom == True:
         browser = Browser('phantomjs')
     else:
@@ -96,8 +96,8 @@ def word_count_single_page(brows, wrd_lst, nxt_clicks):
 
         
 ###################final search function
-def word_count_paging(pub_id, search_term, wrd_lst, year=None, sports=False, phantom=False, user_name, password): ###number of articles with a certain word
-    browser = advanced_search(pub_id, search_term, year, sports, phantom, user_name, password)
+def word_count_paging(pub_id, search_term, wrd_lst,  user_name, password, year=None, sports=False, phantom=False): ###number of articles with a certain word
+    browser = advanced_search(pub_id, search_term, user_name, password, year, sports, phantom)
     numb_of_articles = find_number_of_articles(browser)
     print "Total number of articles about %s from %d is %d" % (search_term, year, numb_of_articles)
     pages = numb_of_articles/100 + 1
@@ -110,7 +110,7 @@ def word_count_paging(pub_id, search_term, wrd_lst, year=None, sports=False, pha
         if page == 0:
             browser.click_link_by_partial_href('/docview/')            
         else:
-            browser = advanced_search(pub_id, search_term, year, sports, phantom)
+            browser = advanced_search(pub_id, search_term, user_name, password, year, sports, phantom)
             browser.select('itemsPerPage', '50')
             browser.find_by_name('submit_11').first.click()
             nxt_page_clcks = page*2
@@ -141,6 +141,6 @@ for biz in csv_aa:
 biz_list += ['shinola', 'slows', 'bridgewater']    
     
     
-a = word_count_paging(chicago_trib_id, 'Detroit', biz_list, 2012, phantom=True, #user_name, #password) ####user_name and password are removed
+a = word_count_paging(chicago_trib_id, 'Detroit', biz_list, USERNAME, PASSWORD, 2012, phantom=True) ####user_name and password are removed
 for word in a:
    print "%s : %d" % (word, a[word])
