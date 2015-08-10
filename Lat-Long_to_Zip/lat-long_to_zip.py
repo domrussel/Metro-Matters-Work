@@ -2,9 +2,6 @@ import csv
 import requests
 import json
 
-
-
-
 def get_zip(lati, longi):
     d = {'latlng' : '%s,%s' % (lati, longi), 'key' : 'AIzaSyCQvKC7Q1C54YdgJOx6QFxP1aLUmgr7XuQ'}
     geo_json = requests.get('https://maps.googleapis.com/maps/api/geocode/json', params = d)
