@@ -1,0 +1,68 @@
+
+
+###generate poverty rate by census tract
+pov = read.csv("metro_d_poverty_rates.csv")
+pov = pov[,c("GEO.id2" ,"HC03_EST_VC01")]
+names(pov) = c("FIPS", "Pov_Rate")
+pov$Pov_Rate = as.numeric(as.character(pov$Pov_Rate))
+###only census tracts that make poverty cut
+pov_cut = 3*mean(pov$Pov_Rate, na.rm = T) #### if less than 40 skip next line
+pov_cut = 40
+pov_RCAP = pov[pov$Pov_Rate > pov_cut,]
+
+###generate pct non_white by census tract
+non_white = read.csv("metro_d_pop.csv")
+non_white = non_white[,c("GEO.id2", "HD02_S078")]
+names(non_white) = c("FIPS", "nwp") 
+non_white$nwp = as.numeric(as.character(non_white$nwp))
+non_white$nwp = 100 - non_white$nwp
+###only census tracts that are less than 50 percent white
+cut = 50
+non_white_RCAP = non_white[non_white$nwp > cut,]
+
+###create final listing of RCAP census tracts
+RCAP = merge(pov_RCAP, non_white_RCAP)
+RCAP = na.omit(RCAP)
+
+###generate total housing units by census tract
+housing = read.csv("metro_d_houses.csv")
+housing = housing[,c("GEO.id2","HD01_S01")]
+names(housing) = c("FIPS", "total_housing_units")
+housing$total_housing_units = as.numeric(as.character(housing$total_housing_units))
+
+###generate affordable housing units by census tract, store in "final"
+tract_d = read.csv("TRACT_AK_MN.csv")
+tract_d = tract_d[tract_d$"states" == "MI Michigan",]
+final = data.frame(matrix(NA, nrow = length(unique(tract_d$code)), ncol = 8))
+names(final) = c("FIPS", "Public Housing", "Housing Choice Vouchers", "Mod Rehab", "Section 8", "Section 236", "Multi-Family Other", "Total")
+for(i in c(1:length(unique(tract_d$code)))){
+	one_tract = tract_d[tract_d$code == unique(tract_d$code)[i],]
+	sum_tract = sum(one_tract$total_units, na.rm = TRUE)
+	ph = one_tract[one_tract$program == 2,]$total_units
+	hcv = one_tract[one_tract$program == 3,]$total_units
+	mr = one_tract[one_tract$program == 4,]$total_units
+	s8 = one_tract[one_tract$program == 5,]$total_units
+	s236 = one_tract[one_tract$program == 6,]$total_units
+	mfo = one_tract[one_tract$program == 7,]$total_units
+	final[i,] = c(unique(tract_d$code)[i], ph, hcv, mr, s8, s236, mfo, sum_tract)
+}
+
+###create one listing of all cbsa tracts with affordable housing info 
+cbsa_total = merge(housing, final, all = TRUE) #include all CBSA tracts
+cbsa_total[is.na(cbsa_total)] = 0
+
+###get number of aff housing units and housing units in whole CBSA
+cbsa_aff_housing_units = sum(cbsa_total$Total)
+cbsa_housing_units = sum(cbsa_total$total_housing_units)
+
+###get number of aff housing units and housing units in RCAP only
+final_RCAP = merge(RCAP, housing)
+final_RCAP = merge(final_RCAP, final)
+total_aff_RCAP = sum(final_RCAP$Total)
+total_housing_RCAP = sum(final_RCAP$total_housing_units)
+
+###get final variables
+pct_aff_in_cbsa = cbsa_aff_housing_units/cbsa_housing_units
+pct_aff_in_RCAP = total_aff_RCAP/total_housing_RCAP
+pct_of_aff_in_RCAP = total_aff_RCAP/cbsa_aff_housing_units
+pct_of_housing_in_RCAP = total_housing_RCAP/cbsa_housing_units
